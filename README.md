@@ -90,7 +90,7 @@ calls are synchronous. Failed edits leave the previous document intact.
 
 ## Validation
 
-Run `just ecosystem-test highlight`. Native GoML tests cover built-in/custom
+Run `(cd ../verification && just ecosystem-test highlight)`. Native GoML tests cover built-in/custom
 grammars, Unicode-safe ranges, nested/raw/multiline states, embedded fences,
 recovery, persistent edits and suffix reuse, output escaping/bounds, budgets,
 cancellation, detached snapshots and concurrent registry reuse. Two hundred
