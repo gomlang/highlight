@@ -68,7 +68,7 @@ lines, reparses from the first changed line, and reuses the unchanged suffix as
 soon as the incoming lexical state agrees. Old snapshots remain immutable and
 can be used concurrently. Line splitting and source reconstruction are O(total
 bytes); incremental reuse saves lexical work, not the source-copy cost. A rope
-consumer demonstrates keeping document edits and source edits synchronized.
+example demonstrates keeping document edits and source edits synchronized.
 
 ## Rendering and limits
 
@@ -95,5 +95,17 @@ grammars, Unicode-safe ranges, nested/raw/multiline states, embedded fences,
 recovery, persistent edits and suffix reuse, output escaping/bounds, budgets,
 cancellation, detached snapshots and concurrent registry reuse. Two hundred
 deterministic edits compare incremental results with full re-highlighting.
-The versioned consumer combines `rope`, Markdown embedded code, and plain/HTML
+The example combines `rope`, Markdown embedded code, and plain/HTML
 preview. There is no Python or native adapter.
+
+## Development and examples
+
+Requires GoML 0.1.55 or newer. The `examples/basic/` example shares the root manifest; test-only helpers are declared in `[dev-dependencies]`. From the library root, run:
+
+```sh
+goml run --example basic
+goml test
+goml verify --timeout 300s
+```
+
+`goml test` builds the example and runs its tests. `goml verify` repeats the example checks as an independent module against an isolated registry snapshot. `(cd ../verification && just ecosystem-test highlight)` also retains the library-specific smoke and compatibility checks.

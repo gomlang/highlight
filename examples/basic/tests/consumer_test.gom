@@ -1,6 +1,6 @@
 package tests;
 
-use consumer::highlight as app;
+use ecosystem::highlight::examples::basic as app;
 
 #[test]
 fn rope_and_incremental_embedded_language_preview() -> () {
