@@ -39,6 +39,17 @@ fn lossless(document: highlight::Document) -> () {
 }
 
 #[test]
+fn goml_filename_detection_and_legacy_language_alias() -> () {
+    let engine = highlighter();
+    testing::assert_eq(engine.detect("src/main.goml"), "goml");
+    testing::assert_eq(engine.detect("src/main.gom"), "text");
+    testing::assert_eq(engine.detect("src/main.GOML"), "text");
+    testing::assert_eq(kind(document("gom", "let value = 1;"), 0), highlight::Scope::Keyword);
+    let fenced = document("markdown", "```gom\nlet value = 1;\n```\n");
+    testing::assert_eq(kind(fenced, 7), highlight::Scope::Keyword);
+}
+
+#[test]
 fn builtin_grammars_classify_keywords_identifiers_and_numbers() -> () {
     let value = document("goml", "let answer: i64 = 42; // yes\n");
     testing::assert_eq(kind(value, 0), highlight::Scope::Keyword);
