@@ -201,7 +201,16 @@ impl Highlighter {
                             offset += scalar_width(text, offset);
                         }
                     } else if starts_at(text, offset, region.end) {
-                        offset += region.end.byte_len();
+                        let mut width = region.end.byte_len();
+                        if language.name == "toml"
+                            && (region.end == "\"\"\"" || region.end == "'".repeat(3)) {
+                            let quote = region.end.byte_get(0);
+                            while offset + width < text.byte_len() && width < 5
+                                && text.byte_get(offset + width) == quote {
+                                width += 1;
+                            }
+                        }
+                        offset += width;
                         depth -= 1;
                         if depth == 0 {
                             break;

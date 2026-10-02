@@ -30,7 +30,9 @@ unknown Markdown fence languages render as plain text.
   Interpolated strings receive string styling as a whole.
 - JSON: literals, numbers, escaped strings, punctuation and invalid bare words.
 - TOML: keys, numbers/dates, literals, comments, punctuation and basic/literal
-  strings including multiline forms. Dates share the number scope.
+  strings including multiline forms. Closing runs of four or five quotes retain
+  one or two literal quotes within the multiline string, following [TOML 1.0](https://toml.io/en/v1.0.0#string).
+  Dates share the number scope.
 - Markdown: ATX headings after at most three ASCII spaces (tabs and Unicode
   whitespace do not create heading indentation), inline code, basic emphasis/links, HTML comments and
   fenced code with GoML/JSON/TOML/custom embedded languages. Fence closure takes
