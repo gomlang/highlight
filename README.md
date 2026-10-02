@@ -31,7 +31,8 @@ unknown Markdown fence languages render as plain text.
 - JSON: literals, numbers, escaped strings, punctuation and invalid bare words.
 - TOML: keys, numbers/dates, literals, comments, punctuation and basic/literal
   strings including multiline forms. Dates share the number scope.
-- Markdown: ATX headings, inline code, basic emphasis/links, HTML comments and
+- Markdown: ATX headings after at most three ASCII spaces (tabs and Unicode
+  whitespace do not create heading indentation), inline code, basic emphasis/links, HTML comments and
   fenced code with GoML/JSON/TOML/custom embedded languages. Fence closure takes
   precedence over an embedded language's unfinished string or comment.
 
@@ -55,12 +56,12 @@ existing language of the same name. Original registries remain unchanged.
 `document(language, source, context)` retains a complete source snapshot and
 per-line tokens/state. `line(language, text, before, context)` supports incremental
 streaming by returning a line and its `after()` state. One call accepts at most
-one newline, which must be final. State must come from the same language/registry.
-Single-line strings recover at the line end; multiline regions remain open.
+one final line terminator: LF, CRLF or lone CR. A CRLF pair is one terminator. State must come from the same language/registry.
+Single-line strings recover at any of these line endings; multiline regions remain open.
 
 `Document::spans()` returns complete, sorted, non-overlapping UTF-8 byte ranges;
 `Line::spans()` returns ranges relative to that line. All nonempty source bytes
-are covered. Returned vectors are detached. Lines preserve LF/CRLF and a final
+are covered. Returned vectors are detached. Lines preserve LF/CRLF/lone CR and a final
 empty line after a trailing newline; an empty document has one empty line.
 
 `replace(start, end, replacement, context)` checks UTF-8 boundaries and returns

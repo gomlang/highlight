@@ -47,6 +47,8 @@ fn compile_language(
     for region in regions {
         if region.begin == "" || region.end == "" || region.begin.contains("\n")
             || region.end.contains("\n")
+            || region.begin.contains("\r")
+            || region.end.contains("\r")
             || region.begin.byte_len() > 1024
             || region.end.byte_len() > 1024
             || (region.nested && region.begin == region.end) {

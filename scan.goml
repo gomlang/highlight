@@ -88,7 +88,9 @@ impl Highlighter {
                 checked_context(ctx)?;
                 next_check = offset + 1024;
             }
-            if ch == '\n' && offset + 1 != text.byte_len() {
+            if (ch == '\n' && offset + 1 != text.byte_len())
+                || (ch == '\r' && offset + 1 != text.byte_len()
+                    && !(offset + 2 == text.byte_len() && text.byte_get(offset + 1) == b'\n')) {
                 return Result::Err(failure("line API accepts at most one final newline"));
             }
         }
@@ -138,8 +140,11 @@ impl Highlighter {
                 return self.scan(embedded, text, before, ctx);
             }
             if before.region.is_none() {
-                let trimmed = text.trim_start();
-                let indentation = text.byte_len() - trimmed.byte_len();
+                let mut indentation = 0;
+                while indentation < text.byte_len() && text.byte_get(indentation) == b' ' {
+                    indentation += 1;
+                }
+                let trimmed = text.byte_slice(indentation, text.byte_len());
                 let mut count = 0;
                 while count < trimmed.byte_len() && trimmed.byte_get(count) == 35 {
                     count += 1;

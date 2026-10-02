@@ -11,7 +11,8 @@ fn split_lines(text: string, max_lines: isize, ctx: context::Context) -> Result[
             checked_context(ctx)?;
             next_check = index + 1024;
         }
-        if ch == '\n' {
+        if ch == '\n'
+            || (ch == '\r' && (index + 1 == text.byte_len() || text.byte_get(index + 1) != b'\n')) {
             lines.push(text.byte_slice(start, index + 1));
             start = index + 1;
             if lines.len() >= max_lines {
