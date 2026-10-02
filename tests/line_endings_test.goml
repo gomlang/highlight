@@ -1,0 +1,110 @@
+package tests;
+
+use ecosystem::highlight;
+use std::context;
+use std::testing;
+
+#[test]
+fn all_line_terminators_reset_single_line_regions_and_preserve_multiline_state() -> () {
+    let engine = highlighter();
+    let ctx = context::Context::background();
+    for newline in["\n", "\r\n", "\r"] {
+        let source = "\"unfinished" + newline + "let x = 1" + newline + "/* open" + newline
+            + "close */"
+            + newline;
+        let doc = testing::expect_ok(engine.document("goml", source, ctx), "document");
+        testing::assert_eq(doc.line_count(), 5);
+        testing::assert_eq(
+            kind(doc, "\"unfinished".byte_len() + newline.byte_len()),
+            highlight::Scope::Keyword,
+        );
+        let lines = Vec::from_array(
+            [
+                "\"unfinished" + newline,
+                "let x = 1" + newline,
+                "/* open" + newline,
+                "close */" + newline,
+                "",
+            ],
+        );
+        let mut state = highlight::State::new();
+        for index in 0..lines.len() {
+            let line = testing::expect_ok(
+                engine.line("goml", lines[index], state, ctx),
+                "stream line",
+            );
+            state = line.after();
+            let whole = testing::expect_some(doc.line(index), "document line");
+            testing::assert_eq(line.text(), whole.text());
+            testing::assert(line.spans() == whole.spans());
+            testing::assert(line.after() == whole.after());
+        }
+        testing::assert(state.is_plain());
+        lossless(doc);
+    }
+    for source in["a\rb", "a\r\nb", "a\nb", "\r\r", "\n\r"] {
+        testing::assert_err(engine.line("goml", source, highlight::State::new(), ctx));
+    }
+    testing::assert_err(
+        highlight::Language::compile(
+            "bad",
+            Vec::new(),
+            Vec::new(),
+            Vec::from_array([highlight::Region::new("x\r", "y", highlight::Scope::String)]),
+        ),
+    );
+}
+
+#[test]
+fn mixed_line_ending_edits_match_full_highlighting() -> () {
+    let engine = highlighter();
+    let ctx = context::Context::background();
+    let original = testing::expect_ok(
+        engine.document("goml", "let x = 1\r\n\"open\rfn main() {}\n/* x\r y */\r", ctx),
+        "document",
+    );
+    for replacement in["", "\r", "\n", "\r\n", "界\r\n"] {
+        for index in 0..original.source().byte_len() + 1 {
+            let update = testing::expect_ok(
+                original.replace(index, index, replacement, ctx),
+                "insert",
+            );
+            let full = testing::expect_ok(
+                engine.document("goml", update.document.source(), ctx),
+                "full",
+            );
+            testing::assert(update.document.spans() == full.spans());
+            testing::assert_eq(update.document.line_count(), full.line_count());
+            for line in 0..full.line_count() {
+                let incremental = testing::expect_some(
+                    update.document.line(line),
+                    "incremental line",
+                );
+                let complete = testing::expect_some(full.line(line), "full line");
+                testing::assert_eq(incremental.text(), complete.text());
+                testing::assert(incremental.after() == complete.after());
+            }
+        }
+    }
+    testing::assert_eq(original.line_count(), 6);
+}
+
+#[test]
+fn markdown_heading_indentation_uses_ascii_spaces_only() -> () {
+    let engine = highlighter();
+    let ctx = context::Context::background();
+    for prefix in["", " ", "  ", "   "] {
+        let doc = testing::expect_ok(
+            engine.document("markdown", prefix + "# Title\r", ctx),
+            "heading",
+        );
+        testing::assert_eq(kind(doc, prefix.byte_len()), highlight::Scope::Heading);
+    }
+    for prefix in["    ", "\t", " \t", " ", "　"] {
+        let doc = testing::expect_ok(
+            engine.document("markdown", prefix + "# Title\r", ctx),
+            "non-heading",
+        );
+        testing::assert(kind(doc, prefix.byte_len()) != highlight::Scope::Heading);
+    }
+}

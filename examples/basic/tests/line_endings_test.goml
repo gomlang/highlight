@@ -1,0 +1,20 @@
+package tests;
+
+use ecosystem::highlight;
+use std::context;
+use std::testing;
+
+#[test]
+fn downstream_cr_documents_and_edits_keep_line_snapshots() -> () {
+    let engine = testing::expect_ok(
+        highlight::Highlighter::new(highlight::Options::new()),
+        "engine",
+    );
+    let ctx = context::Context::background();
+    let doc = testing::expect_ok(engine.document("markdown", "# One\r# Two\r", ctx), "document");
+    testing::assert_eq(doc.line_count(), 3);
+    let updated = testing::expect_ok(doc.replace(6, 6, "\n", ctx), "CRLF edit");
+    testing::assert_eq(updated.document.line_count(), 3);
+    testing::assert_eq(updated.document.source(), "# One\r\n# Two\r");
+    testing::assert_eq(doc.source(), "# One\r# Two\r");
+}
