@@ -1,0 +1,54 @@
+package tests;
+
+use ecosystem::highlight;
+use std::context;
+use std::testing;
+
+#[test]
+fn toml_multiline_terminal_quotes_leave_following_tokens_outside_strings() -> () {
+    let engine = highlighter();
+    let ctx = context::Context::background();
+    for quote in["\"", "'"] {
+        for width in[3, 4, 5] {
+            for newline in["\n", "\r\n", "\r"] {
+                let opening = "value = " + quote.repeat(3) + "text" + newline;
+                let closing = "body" + quote.repeat(width) + " # comment" + newline;
+                let doc = testing::expect_ok(
+                    engine.document("toml", opening + closing + "next = true", ctx),
+                    "TOML",
+                );
+                testing::assert_eq(
+                    kind(doc, opening.byte_len() + 4 + width + 1),
+                    highlight::Scope::Comment,
+                );
+                testing::assert_eq(
+                    kind(doc, opening.byte_len() + closing.byte_len()),
+                    highlight::Scope::Identifier,
+                );
+                let first = testing::expect_ok(
+                    engine.line("toml", opening, highlight::State::new(), ctx),
+                    "opening",
+                );
+                let last = testing::expect_ok(
+                    engine.line("toml", closing, first.after(), ctx),
+                    "closing",
+                );
+                testing::assert(last.after().is_plain());
+                let changed = testing::expect_ok(
+                    doc.replace(
+                        opening.byte_len() + 4,
+                        opening.byte_len() + 4 + width,
+                        quote.repeat(4),
+                        ctx,
+                    ),
+                    "edit quotes",
+                );
+                let rebuilt = testing::expect_ok(
+                    engine.document("toml", changed.document.source(), ctx),
+                    "rebuild",
+                );
+                testing::assert(changed.document.spans() == rebuilt.spans());
+            }
+        }
+    }
+}

@@ -1,0 +1,19 @@
+package tests;
+
+use ecosystem::highlight;
+use std::context;
+use std::testing;
+
+#[test]
+fn downstream_toml_four_quotes_preserve_comment_scope() -> () {
+    let engine = testing::expect_ok(
+        highlight::Highlighter::new(highlight::Options::new()),
+        "engine",
+    );
+    let doc = testing::expect_ok(
+        engine.document("toml", "x = \"\"\"value\"\"\"\" # tail", context::Context::background()),
+        "document",
+    );
+    let html = testing::expect_ok(doc.to_html(4096), "HTML");
+    testing::assert(html.contains("hl-comment\"># tail"));
+}
