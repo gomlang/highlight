@@ -126,7 +126,7 @@ fn goml_language() -> Result[Language, Error] {
             quoted("f\"", "\"", true, false),
         ],
     );
-    compile_language("goml", Vec::from_array(["gom", "goml"]), rules, regions, true, false)
+    compile_language("goml", Vec::from_array(["goml"]), rules, regions, true, false)
 }
 
 fn json_language() -> Result[Language, Error] {
@@ -261,6 +261,11 @@ impl Highlighter {
     }
 
     fn language(self: Highlighter, name: string) -> Result[Language, Error] {
+        let name = if name == "gom" {
+            "goml"
+        } else {
+            name
+        };
         for language in self.languages {
             if language.name == name || language.extensions.contains(name) {
                 return Result::Ok(language);

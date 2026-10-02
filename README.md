@@ -20,7 +20,8 @@ fn preview(source: string) -> Result[string, highlight::Error] {
 
 The built-in registry includes `goml`, `json`, `toml`, `markdown` and `text`.
 `detect(filename)` uses registered extensions; language selection also accepts
-an extension such as `gom` or `md`. Unknown explicit languages return errors;
+an extension such as `goml` or `md`. GoML filename detection uses `.goml`; `gom`
+remains an explicit language and Markdown fence alias. Unknown explicit languages return errors;
 unknown Markdown fence languages render as plain text.
 
 - GoML: keywords, primitive/container types, Unicode identifiers, numbers,
@@ -100,7 +101,7 @@ preview. There is no Python or native adapter.
 
 ## Development and examples
 
-Requires GoML 0.1.55 or newer. The `examples/basic/` example shares the root manifest; test-only helpers are declared in `[dev-dependencies]`. From the library root, run:
+Requires GoML 0.1.56 or newer. The `examples/basic/` example shares the root manifest; test-only helpers are declared in `[dev-dependencies]`. From the library root, run:
 
 ```sh
 goml run --example basic
