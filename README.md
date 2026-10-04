@@ -36,7 +36,11 @@ unknown Markdown fence languages render as plain text.
 - Markdown: ATX headings after at most three ASCII spaces (tabs and Unicode
   whitespace do not create heading indentation), inline code, basic emphasis/links, HTML comments and
   fenced code with GoML/JSON/TOML/custom embedded languages. Fence closure takes
-  precedence over an embedded language's unfinished string or comment.
+  precedence over an embedded language's unfinished string or comment. Following
+  [CommonMark fence rules](https://spec.commonmark.org/0.31.2/#fenced-code-blocks),
+  fence info trims only ASCII spaces and tabs, and closing fences allow only those
+  characters before the line ending. Vertical tabs, form feeds and Unicode
+  whitespace remain content rather than silently closing a code block.
 
 Highlighting is tolerant lexical classification, not syntax validation. Markdown
 inline highlighting is deliberately smaller than the separate CommonMark parser:

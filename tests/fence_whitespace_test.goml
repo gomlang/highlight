@@ -1,0 +1,119 @@
+package tests;
+
+use ecosystem::highlight;
+use std::context;
+use std::testing;
+
+#[test]
+fn markdown_fence_closers_accept_only_spaces_and_tabs_before_line_endings() -> () {
+    let engine = highlighter();
+    let ctx = context::Context::background();
+    for fence in["```", "~~~"] {
+        let opening = testing::expect_ok(
+            engine.line("markdown", fence + "goml\n", highlight::State::new(), ctx),
+            "opening fence",
+        );
+        for ending in["\n", "\r\n", "\r", ""] {
+            for padding in["", " ", "\t", " \t  "] {
+                let line = testing::expect_ok(
+                    engine.line("markdown", "   " + fence + padding + ending, opening.after(), ctx),
+                    "ASCII fence padding",
+                );
+                testing::assert(line.after().is_plain());
+                testing::assert_eq(line.spans()[0].scope, highlight::Scope::Code);
+            }
+            for padding in[
+                "\u00a0",
+                "\u2003",
+                "\u3000",
+                "\u000b",
+                "\u000c",
+                "\u0085",
+                "\u2028",
+                "\u2029",
+            ] {
+                let line = testing::expect_ok(
+                    engine.line(
+                        "markdown",
+                        fence + " " + padding + "\t" + ending,
+                        opening.after(),
+                        ctx,
+                    ),
+                    "non-ASCII fence padding",
+                );
+                testing::assert(!line.after().is_plain());
+                let following = testing::expect_ok(
+                    engine.line("markdown", "let x = 1\n", line.after(), ctx),
+                    "still embedded",
+                );
+                testing::assert_eq(following.spans()[0].scope, highlight::Scope::Keyword);
+            }
+        }
+    }
+}
+
+#[test]
+fn markdown_fence_info_preserves_other_whitespace() -> () {
+    let engine = highlighter();
+    let ctx = context::Context::background();
+    for padding in["\u00a0", "\u2003", "\u3000", "\u000b", "\u000c"] {
+        for info in[padding + "goml", "goml" + padding] {
+            let doc = testing::expect_ok(
+                engine.document("markdown", "``` \t" + info + " \t\r\nlet x = 1\r\n```\r\n", ctx),
+                "unknown info language",
+            );
+            testing::assert_eq(
+                testing::expect_some(doc.line(1), "code").spans()[0].scope,
+                highlight::Scope::Text,
+            );
+            testing::assert(testing::expect_some(doc.line(2), "close").after().is_plain());
+            lossless(doc);
+        }
+    }
+    let doc = testing::expect_ok(
+        engine.document("markdown", "~~~ \tgoml \t\rlet x = 1\r~~~\t\r", ctx),
+        "ASCII-trimmed info language",
+    );
+    testing::assert_eq(
+        testing::expect_some(doc.line(1), "code").spans()[0].scope,
+        highlight::Scope::Keyword,
+    );
+}
+
+#[test]
+fn editing_fence_padding_recomputes_embedded_states() -> () {
+    let engine = highlighter();
+    let ctx = context::Context::background();
+    let prefix = "```goml\n```";
+    let original = testing::expect_ok(
+        engine.document("markdown", prefix + "\u000c\nlet x = 1\n```\n# Heading\n", ctx),
+        "open fence",
+    );
+    testing::assert_eq(
+        testing::expect_some(original.line(2), "embedded").spans()[0].scope,
+        highlight::Scope::Keyword,
+    );
+    for padding in[" ", "\t", "\u2003"] {
+        let update = testing::expect_ok(
+            original.replace(prefix.byte_len(), prefix.byte_len() + 1, padding, ctx),
+            "replace padding",
+        );
+        let full = testing::expect_ok(
+            engine.document("markdown", update.document.source(), ctx),
+            "full highlight",
+        );
+        testing::assert(update.document.spans() == full.spans());
+        for index in 0..full.line_count() {
+            testing::assert(
+                testing::expect_some(update.document.line(index), "incremental").after()
+                    == testing::expect_some(full.line(index), "full").after(),
+            );
+        }
+        lossless(update.document);
+    }
+    testing::assert(!testing::expect_some(original.line(1), "retained state").after().is_plain());
+    testing::assert_eq(
+        testing::expect_some(original.line(4), "heading").spans()[0].scope,
+        highlight::Scope::Heading,
+    );
+}

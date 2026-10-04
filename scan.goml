@@ -54,7 +54,23 @@ fn fence_marker(text: string) -> Option[(string, string)] {
     if end - start < 3 {
         return Option::None;
     }
-    let info = text.byte_slice(end, text.byte_len()).trim();
+    let mut info_start = end;
+    let mut info_end = text.byte_len();
+    if info_end > end && text.byte_get(info_end - 1) == b'\n' {
+        info_end -= 1;
+    }
+    if info_end > end && text.byte_get(info_end - 1) == b'\r' {
+        info_end -= 1;
+    }
+    while info_start < info_end
+        && (text.byte_get(info_start) == b' ' || text.byte_get(info_start) == b'\t') {
+        info_start += 1;
+    }
+    while info_end > info_start
+        && (text.byte_get(info_end - 1) == b' ' || text.byte_get(info_end - 1) == b'\t') {
+        info_end -= 1;
+    }
+    let info = text.byte_slice(info_start, info_end);
     if ch == 96 && info.contains("`") {
         return Option::None;
     }
