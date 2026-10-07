@@ -1,6 +1,6 @@
 package highlight;
 
-use ecosystem::logos;
+use ecosystem::lexer;
 
 impl Language {
     pub fn compile(name: string, extensions: Vec[string], rules: Vec[Rule], regions: Vec[Region]) -> Result[
@@ -30,15 +30,15 @@ fn compile_language(
     if name == "" || name.byte_len() > 128 || rules.len() > 4096 || regions.len() > 256 {
         return Result::Err(failure("invalid language definition"));
     }
-    let compiled: Vec[logos::Rule[Token, (), string]] = Vec::new();
+    let compiled: Vec[lexer::Rule[Token, (), string]] = Vec::new();
     for rule in rules {
         let value = Token::Plain(rule.scope);
         compiled.push(
             match rule.pattern {
-                Pattern::Literal(text) => logos::Rule::token(text, value).with_priority(
+                Pattern::Literal(text) => lexer::Rule::token(text, value).with_priority(
                     rule.priority,
                 ),
-                Pattern::Regex(text) => logos::Rule::regex(text, |_| logos::Action::Emit(value)).with_priority(
+                Pattern::Regex(text) => lexer::Rule::regex(text, |_| lexer::Action::Emit(value)).with_priority(
                     rule.priority,
                 ),
             },
@@ -54,19 +54,19 @@ fn compile_language(
             || (region.nested && region.begin == region.end) {
             return Result::Err(failure("invalid region delimiters"));
         }
-        compiled.push(logos::Rule::token(region.begin, Token::Enter(region)).with_priority(200));
+        compiled.push(lexer::Rule::token(region.begin, Token::Enter(region)).with_priority(200));
     }
     if raw {
         compiled.push(
-            logos::Rule::regex("b?r#*\"", |_| logos::Action::Emit(Token::Raw)).with_priority(200),
+            lexer::Rule::regex("b?r#*\"", |_| lexer::Action::Emit(Token::Raw)).with_priority(200),
         );
     }
     compiled.push(
-        logos::Rule::regex(".", |_| logos::Action::Emit(Token::Plain(Scope::Text))).with_dot_all().with_priority(
+        lexer::Rule::regex(".", |_| lexer::Action::Emit(Token::Plain(Scope::Text))).with_dot_all().with_priority(
             0,
         ),
     );
-    let grammar = logos::Grammar::compile(compiled).map_err(|error| failure(error.to_string()))?;
+    let grammar = lexer::Grammar::compile(compiled).map_err(|error| failure(error.to_string()))?;
     Result::Ok(Language { name, extensions: extensions.copy(), grammar, markdown })
 }
 

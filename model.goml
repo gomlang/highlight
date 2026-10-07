@@ -1,6 +1,6 @@
 package highlight;
 
-use ecosystem::logos;
+use ecosystem::lexer;
 use std::context;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -115,7 +115,7 @@ enum Token {
 pub struct Language {
     name: string,
     extensions: Vec[string],
-    grammar: logos::Grammar[Token, (), string],
+    grammar: lexer::Grammar[Token, (), string],
     markdown: bool,
 }
 

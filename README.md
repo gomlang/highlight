@@ -1,6 +1,6 @@
 # highlight
 
-Native GoML lexical syntax highlighting with reusable `logos` grammars, immutable
+Native GoML lexical syntax highlighting with reusable `lexer` grammars, immutable
 document snapshots, cross-line state, incremental edits, themes and ANSI/HTML
 rendering. The design takes inspiration from [syntect](https://github.com/trishume/syntect).
 
@@ -49,9 +49,9 @@ fence indentation are not modeled. TextMate/Sublime grammar compatibility and
 semantic symbol classification are not provided.
 
 `Language::compile(name, extensions, rules, regions)` compiles literal/regex
-rules through `logos`. `Region` describes opening/closing delimiters, nested
+rules through `lexer`. `Region` describes opening/closing delimiters, nested
 comments, optional escape characters, and multiline policy. Regex syntax and
-longest-match/priority semantics are those of `logos`; ambiguities and work
+longest-match/priority semantics are those of `lexer`; ambiguities and work
 limits become recoverable errors. Regions use priority 200; literal rules use
 100, regex rules 10 and the whole-scalar plain fallback 0. Users can choose a
 different rule priority. `with_language` returns a new registry, replacing an
@@ -89,7 +89,7 @@ output. `to_html` escapes source and emits stable `hl-<scope>` CSS classes insid
 checked output byte limit.
 
 Default limits: 4 MiB/document, 64 KiB/line, 100,000 lines, 1,000,000 spans and
-64 nested region levels, plus `logos` automaton/matching budgets. Definition and
+64 nested region levels, plus `lexer` automaton/matching budgets. Definition and
 edit failures return `Error { message, line }`; parsing reports one-based line
 numbers. Cancellation/deadlines are checked during line splitting and reuse,
 between lines/tokens and periodically within regions, regardless of UTF-8 widths.
