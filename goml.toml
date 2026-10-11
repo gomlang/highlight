@@ -2,8 +2,8 @@
 path = "ecosystem::highlight"
 
 [dependencies]
-"ecosystem::lexer" = "0.1.0"
-"ecosystem::ansi" = "0.1.0"
+"ecosystem::lexer" = true
+"ecosystem::ansi" = true
 
 [dev-dependencies]
-"ecosystem::rope" = "0.1.0"
+"ecosystem::rope" = true
