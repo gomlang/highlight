@@ -1,0 +1,92 @@
+package tests;
+
+use ecosystem::highlight;
+use ecosystem::ansi;
+use std::context;
+use std::testing;
+
+#[test]
+fn range_rendering_preserves_prior_lexical_state() -> () {
+    let engine = testing::expect_ok(
+        highlight::Highlighter::new(highlight::Options::new()),
+        "engine",
+    );
+    let doc = testing::expect_ok(
+        engine.document(
+            "goml",
+            "/* start\r\n<&名\r\nend */\nlet x = 1;\n",
+            context::Context::background(),
+        ),
+        "document",
+    );
+    let html = testing::expect_ok(doc.to_html_range(1, 2, 4096), "html");
+    testing::assert_eq(
+        html,
+        "<pre class=\"highlight\"><code><span class=\"hl-comment\">&lt;&amp;名\r\n</span></code></pre>",
+    );
+    testing::assert_eq(
+        testing::expect_ok(
+            doc.to_ansi_range(1, 2, highlight::Theme::dark(), ansi::Profile::Plain, 4096),
+            "plain",
+        ),
+        ansi::safe_text("<&名\r\n"),
+    );
+    testing::assert_eq(
+        testing::expect_ok(doc.to_html_range(0, doc.line_count(), 4096), "range"),
+        testing::expect_ok(doc.to_html(4096), "full"),
+    );
+    for profile in Vec::from_array([ansi::Profile::Plain, ansi::Profile::TrueColor]) {
+        testing::assert_eq(
+            testing::expect_ok(
+                doc.to_ansi_range(0, doc.line_count(), highlight::Theme::dark(), profile, 4096),
+                "range ansi",
+            ),
+            testing::expect_ok(doc.to_ansi(highlight::Theme::dark(), profile, 4096), "full ansi"),
+        );
+    }
+}
+
+#[test]
+fn range_rendering_bounds_empty_and_output_limits() -> () {
+    let engine = testing::expect_ok(
+        highlight::Highlighter::new(highlight::Options::new()),
+        "engine",
+    );
+    let doc = testing::expect_ok(
+        engine.document("goml", "let a = 1;\n\"<&\"\n", context::Context::background()),
+        "document",
+    );
+    let empty = "<pre class=\"highlight\"><code></code></pre>";
+    testing::assert_eq(
+        testing::expect_ok(doc.to_html_range(1, 1, empty.byte_len()), "empty"),
+        empty,
+    );
+    testing::assert_eq(
+        testing::expect_ok(
+            doc.to_ansi_range(
+                doc.line_count(),
+                doc.line_count(),
+                highlight::Theme::dark(),
+                ansi::Profile::TrueColor,
+                0,
+            ),
+            "empty ansi",
+        ),
+        "",
+    );
+    for pair in Vec::from_array([(-1, 0), (2, 1), (0, 4)]) {
+        let (start, end) = pair;
+        testing::assert_err(doc.to_html_range(start, end, 4096));
+        testing::assert_err(
+            doc.to_ansi_range(start, end, highlight::Theme::dark(), ansi::Profile::Plain, 4096),
+        );
+    }
+    let rendered = testing::expect_ok(doc.to_html_range(1, 2, 4096), "escaped");
+    testing::assert_eq(
+        testing::expect_ok(doc.to_html_range(1, 2, rendered.byte_len()), "exact budget"),
+        rendered,
+    );
+    testing::assert_err(doc.to_html_range(1, 2, rendered.byte_len() - 1));
+    testing::assert_err(doc.to_ansi_range(0, 0, highlight::Theme::dark(), ansi::Profile::Plain, -1));
+    testing::assert_err(doc.to_html_range(0, 0, -1));
+}

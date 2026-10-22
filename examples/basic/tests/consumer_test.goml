@@ -1,6 +1,25 @@
 package tests;
 
 use ecosystem::highlight::examples::basic as app;
+use ecosystem::highlight;
+use std::context;
+use std::testing;
+
+#[test]
+fn selected_line_keeps_multiline_comment_scope() -> () {
+    let engine = testing::expect_ok(
+        highlight::Highlighter::new(highlight::Options::new()),
+        "engine",
+    );
+    let document = testing::expect_ok(
+        engine.document("goml", "/*\nvisible\n*/\n", context::Context::background()),
+        "document",
+    );
+    testing::assert_eq(
+        testing::expect_ok(document.to_html_range(1, 2, 1024), "selected"),
+        "<pre class=\"highlight\"><code><span class=\"hl-comment\">visible\n</span></code></pre>",
+    );
+}
 
 #[test]
 fn rope_and_incremental_embedded_language_preview() -> () {

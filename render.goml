@@ -109,9 +109,24 @@ impl Document {
         string,
         Error,
     ] {
+        self.to_ansi_range(0, self.line_count(), theme, profile, max_bytes)
+    }
+
+    pub fn to_ansi_range(
+        self: Document,
+        start: isize,
+        end: isize,
+        theme: Theme,
+        profile: ansi::Profile,
+        max_bytes: isize,
+    ) -> Result[string, Error] {
+        let spans = self.range_spans(start, end)?;
+        if max_bytes < 0 {
+            return Result::Err(failure("render output limit exceeded"));
+        }
         let output = text::StringBuilder::new();
         let mut previous = ansi::Style::new();
-        for span in self.spans() {
+        for span in spans {
             let style = theme.style(span.scope);
             write_bounded(output, style.transition(previous, profile), max_bytes)?;
             write_bounded(
@@ -126,9 +141,17 @@ impl Document {
     }
 
     pub fn to_html(self: Document, max_bytes: isize) -> Result[string, Error] {
+        self.to_html_range(0, self.line_count(), max_bytes)
+    }
+
+    pub fn to_html_range(self: Document, start: isize, end: isize, max_bytes: isize) -> Result[
+        string,
+        Error,
+    ] {
+        let spans = self.range_spans(start, end)?;
         let output = text::StringBuilder::new();
         write_bounded(output, "<pre class=\"highlight\"><code>", max_bytes)?;
-        for span in self.spans() {
+        for span in spans {
             write_bounded(output, "<span class=\"hl-" + span.scope.name() + "\">", max_bytes)?;
             write_bounded(
                 output,
@@ -139,5 +162,25 @@ impl Document {
         }
         write_bounded(output, "</code></pre>", max_bytes)?;
         Result::Ok(output.finish())
+    }
+}
+
+impl Document {
+    fn range_spans(self: Document, start: isize, end: isize) -> Result[Vec[Span], Error] {
+        if start < 0 || end < start || end > self.line_count() {
+            return Result::Err(failure("invalid half-open line range"));
+        }
+        let result = Vec::new();
+        let mut offset = 0;
+        for index in 0..end {
+            let line = self.lines[index];
+            if index >= start {
+                for span in line.spans {
+                    append_span(result, span.start + offset, span.end + offset, span.scope);
+                }
+            }
+            offset += line.text.byte_len();
+        }
+        Result::Ok(result)
     }
 }

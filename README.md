@@ -117,3 +117,21 @@ goml test
 ```
 
 `goml test` builds the example and runs its tests. `(cd ../workflows && just ecosystem-test highlight)` runs the library-specific smoke and compatibility checks.
+
+## Rendering a line range
+
+`Document.to_ansi_range(start, end, theme, profile, max_bytes)` and
+`Document.to_html_range(start, end, max_bytes)` render a zero-based, half-open
+line range. Bounds must satisfy `0 <= start <= end <= line_count()`; invalid
+bounds return `Error`. A final newline creates a final empty line, just as in
+`Document.line`. Empty ranges produce an empty ANSI string or the ordinary empty
+HTML `<pre class="highlight"><code></code></pre>` wrapper.
+
+Rendering reuses the document's stored lexical states, including multiline
+comments, strings and embedded languages that began before `start`. It does not
+parse the selected text as a new document. Only selected spans are collected;
+finding their byte offsets scans preceding line lengths, not their source text.
+HTML escaping, terminal control-character sanitization, final ANSI style reset,
+and the total output byte limit match full-document rendering. HTML preserves
+line terminators; ANSI uses the existing `safe_text` policy (including CR
+sanitization). Full-range output is identical to `to_ansi` / `to_html`.
